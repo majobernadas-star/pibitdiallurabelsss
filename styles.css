@@ -1,0 +1,348 @@
+:root{
+  --bg:#000;
+  --gold:#b97f2b;
+}
+*{box-sizing:border-box}
+html,body{height:100%; overflow-x:hidden}
+body{
+  margin:0;
+  background:var(--bg);
+  font-family:Inter, system-ui, sans-serif;
+  color:#fff;
+}
+.stage{
+  position:relative;
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+.cta{
+  background:linear-gradient(180deg,#b98b31,#a46f20);
+  color:#0b0b0b;
+  border:0;
+  padding:18px 48px;
+  border-radius:32px;
+  letter-spacing:2px;
+  font-weight:700;
+  cursor:pointer;
+  box-shadow:0 6px 18px rgba(0,0,0,0.6), inset 0 -2px 0 rgba(0,0,0,0.12);
+  transition:transform .18s ease, box-shadow .18s ease;
+  position:relative;
+  z-index:10;
+}
+.cta:active{transform:translateY(2px)}
+.cta:hover{box-shadow:0 10px 30px rgba(0,0,0,0.6)}
+
+.cta.hidden{display:none !important;}
+
+.edge{
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:22%;
+  pointer-events:none;
+}
+.edge.left{left:0}
+.edge.right{right:0}
+
+.particle{
+  position:absolute;
+  border-radius:50%;
+  opacity:.9;
+  transform-origin:center;
+  animation:float var(--dur,6s) ease-in-out var(--delay,0s) infinite alternate;
+}
+
+@keyframes float{
+  0%{transform:translateX(0) translateY(0) scale(1); opacity:.7}
+  50%{transform:translateX(var(--tx,20px)) translateY(var(--ty,10px)) scale(1.1); opacity:1}
+  100%{transform:translateX(0) translateY(0) scale(1); opacity:.7}
+}
+
+/* subtle gradient vignette to match the image */
+.stage::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:radial-gradient(ellipse at center, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0.65) 60%);
+  pointer-events:none;
+}
+
+/* responsive tweak */
+@media (max-width:720px){
+  .edge{width:26%}
+  .cta{padding:14px 36px}
+}
+
+/* Overlay (hidden until CTA clicked) */
+.overlay{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,0.0);
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transition:opacity .45s ease, visibility .01s linear .45s;
+  z-index:40;
+}
+.overlay.show{opacity:1; visibility:visible; pointer-events:auto; background:rgba(0,0,0,0.6); transition-delay:0s}
+
+.overlay-content{
+  position:relative;
+  width:100%;
+  max-width:1100px;
+  height:auto;
+  max-height:100vh;
+  padding:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  overflow:visible;
+}
+
+.top-particles{
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:100vh;
+  overflow:visible;
+  pointer-events:none;
+  z-index:1;
+}
+.top-particles .tp{
+  position:absolute;
+  top:-60px;
+  border-radius:50%;
+  opacity:0.95;
+  transform:translateY(0) scale(1);
+  animation:fall var(--dur,4s) linear var(--delay,0s) forwards;
+  pointer-events:none;
+}
+
+@keyframes fall{
+  to{transform:translateY(110vh) scale(0.95); opacity:0.95}
+}
+
+.message{
+  text-align:center;
+  color:var(--gold);
+  mix-blend-mode:screen;
+  pointer-events:auto;
+  z-index:60;
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+}
+.message.up{ transform: translateX(-50%) translateY(-260px); transition:transform .6s ease; }
+.message .small{
+  letter-spacing:4px;
+  font-size:18px;
+  color:#e6d79f;
+  margin-bottom:6px;
+}
+.message h1{
+  margin:0;
+  font-size:clamp(80px, 12vw, 220px);
+  line-height:1.05;
+  font-family: 'Brush Script MT', 'Lucida Handwriting', cursive;
+  color:var(--gold);
+  background:linear-gradient(180deg,#ffd77a,#d49a3b 60%, #a86c22 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  /* stronger layered glow + subtle outline */
+  text-shadow:
+    0 2px 6px rgba(200,160,90,0.45),
+    0 6px 22px rgba(255,200,120,0.55),
+    0 18px 40px rgba(220,150,60,0.25);
+  filter:drop-shadow(0 12px 30px rgba(180,120,40,0.6));
+}
+
+.close{
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  top:auto;
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.12);
+  color:#fff;
+  padding:8px 14px;
+  border-radius:10px;
+  cursor:pointer;
+  z-index:120; /* sit above frames */
+}
+
+.cake-wrap{
+  margin-top:28px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:12px;
+  opacity:0;
+  transform:translateY(12px) scale(0.98);
+  transition:opacity .6s ease, transform .6s ease;
+  pointer-events:none;
+}
+.cake-wrap.show{
+  opacity:1;
+  transform:translateY(0) scale(1);
+  pointer-events:auto;
+}
+.cake-wrap img{
+  width:240px;
+  height:auto;
+  filter:drop-shadow(0 18px 28px rgba(0,0,0,0.6));
+}
+.blow{background:var(--gold);border:0;padding:8px 14px;border-radius:10px;color:#060606;cursor:pointer}
+.blow-hint{font-size:12px;color:#e6d79f;letter-spacing:1px}
+
+/* after blown state dampen glow */
+.cake-wrap.blown img{filter:grayscale(0.15) brightness(0.9) drop-shadow(0 8px 18px rgba(0,0,0,0.6));}
+
+/* puff effect */
+.puff{
+  position:absolute;
+  width:120px;
+  height:60px;
+  border-radius:50%;
+  background:radial-gradient(circle at 40% 30%, rgba(255,255,255,0.9) 0%, rgba(255,220,140,0.7) 10%, rgba(255,200,80,0.12) 40%, rgba(0,0,0,0) 70%);
+  transform:translate(-50%,-50%) scale(0.6);
+  pointer-events:none;
+  animation:puff 900ms ease-out forwards;
+  z-index:60;
+}
+@keyframes puff{
+  0%{opacity:1; transform:translate(-50%,-50%) scale(0.6)}
+  60%{opacity:0.9; transform:translate(-50%,-140%) scale(1.4)}
+  100%{opacity:0; transform:translate(-50%,-240%) scale(1.8)}
+}
+
+/* SVG flame flicker */
+.flame{transform-origin:center bottom; transition:opacity .5s ease, transform .6s ease}
+.flame.flicker{animation:flameFlicker 900ms infinite}
+@keyframes flameFlicker{
+  0%{transform:translateY(0) scale(1); opacity:1}
+  50%{transform:translateY(-2px) scale(1.04); opacity:0.95}
+  100%{transform:translateY(0) scale(1); opacity:1}
+}
+.flame.extinguished{opacity:0; transform:translateY(-6px) scale(0.6)}
+
+.cake-wrap svg,#cakeSvg{width:min(90vw,680px); height:auto; max-width:100%;}
+.blow-hint{margin-top:8px}
+
+/* make SVG flames more visible on dark background */
+.cake-wrap svg .flame{
+  opacity:1;
+  filter: drop-shadow(0 8px 18px rgba(250,190,80,0.6));
+  mix-blend-mode: screen;
+  transform-origin:center bottom;
+}
+
+.cake-wrap svg .flame path, .cake-wrap svg .flame{pointer-events:none}
+
+/* photo frames shown after blow */
+.photo-grid{
+  display:grid;
+  grid-template-columns:repeat(5, minmax(140px, 1fr));
+  gap:24px 28px;
+  width:min(1200px,96%);
+  margin-top:28px;
+  margin-bottom:36px;
+  z-index:6;
+  justify-items:center;
+}
+.photo-frame{
+  width:100%;
+  max-width:320px;
+  height:100%;
+  aspect-ratio:320/380;
+  background:#050505;
+  border-radius:6px;
+  padding:12px;
+  box-shadow:0 28px 70px rgba(0,0,0,0.7);
+  display:flex;align-items:center;justify-content:center;
+}
+.photo-frame{min-height:160px}
+.frame-inner{ width:100%; height:100%; border-radius:4px; background:#0b0b0b; display:flex;align-items:center;justify-content:center; padding:12px; box-sizing:border-box; }
+.frame-inner .frame-img{width:100%;height:100%;background:linear-gradient(180deg,#2b2b2b,#0e0e0e);border-radius:4px;box-shadow:inset 0 0 0 8px #a87220, inset 0 0 0 14px #070707; background-size:cover; background-position:center; background-repeat:no-repeat}
+.frame-inner{position:relative}
+.frame-inner .label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#e6d79f;font-weight:800;font-size:16px}
+.photo-frame img{width:100%; height:100%; object-fit:cover; border-radius:6px}
+.photo-frame.placeholder{color:#d8c48a; font-weight:700; display:flex; align-items:center; justify-content:center}
+
+/* Responsive grid breakpoints */
+@media (max-width:1200px){
+  .photo-grid{grid-template-columns:repeat(4,1fr)}
+}
+@media (max-width:900px){
+  .photo-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:640px){
+  .photo-grid{grid-template-columns:repeat(2,1fr); gap:18px}
+}
+@media (max-width:420px){
+  .photo-grid{grid-template-columns:repeat(1,1fr); gap:14px}
+}
+
+/* flip card styles */
+.flip-card{width:100%; max-width:320px; aspect-ratio:320/380; perspective:1200px}
+.flip-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .6s}
+.flip-card.flipped .flip-inner{transform:rotateY(180deg)}
+.flip-front,.flip-back{position:absolute;inset:0;border-radius:10px;backface-visibility:hidden;overflow:hidden}
+.flip-front{display:flex;align-items:center;justify-content:center; z-index:2}
+.flip-card.flipped .flip-front{z-index:1}
+.flip-back{background:#080808;color:#e6d79f;transform:rotateY(180deg);display:flex;align-items:center;justify-content:center;padding:12px; z-index:1}
+.flip-card.flipped .flip-back{z-index:2}
+.flip-front img{width:100%;height:100%;object-fit:cover}
+.flip-back .text{font-weight:700;text-align:center}
+
+/* Make the photo grid scrollable and touch-friendly on small screens */
+@media (max-width:720px){
+  .overlay-content{align-items:flex-start; padding-top:20px;}
+  .photo-grid{
+    max-height: calc(100vh - 180px);
+    overflow:auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom:28px;
+    width:96%;
+  }
+  /* ensure flip-cards don't expand the hidden area unexpectedly */
+  .flip-card{flex:0 0 auto}
+}
+
+@media (max-width:420px){
+  .cta{padding:10px 20px; font-size:14px}
+  .stage{padding:24px}
+  .message h1{font-size:clamp(40px,10vw,120px)}
+  .cake-wrap svg,#cakeSvg{width:min(94vw,520px)}
+}
+
+@media (max-width:480px){
+  .edge{display:none}
+  .stage{min-height:100vh; height:auto; padding:20px}
+  .overlay{align-items:flex-start}
+  .overlay-content{max-height:100vh; overflow:auto; padding:18px}
+  .cake-wrap svg,#cakeSvg{width:94vw; max-height:48vh; height:auto}
+  .message{left:50%; transform:translateX(-50%)}
+  .message.up{ transform: translateX(-50%) translateY(-120px); }
+  .photo-grid{width:100%; gap:12px}
+  .close{bottom:12px; right:12px; top:auto; padding:6px 10px}
+}
+
+/* reserve space at bottom so fixed Close button doesn't overlap content */
+.overlay-content{padding-bottom:90px}
+.photo-grid{padding-bottom:96px}
+
+@media (max-width:480px){
+  /* a bit more bottom padding on very small screens */
+  .overlay-content{padding-bottom:110px}
+  .photo-grid{padding-bottom:120px}
+}
+
