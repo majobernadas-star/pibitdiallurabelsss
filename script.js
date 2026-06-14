@@ -251,6 +251,15 @@ document.addEventListener('DOMContentLoaded', ()=>{
     }, 900);
   }
 
+  // allow clicking/tapping the cake as a direct fallback to extinguish
+  // this gives users who can't use the mic a simple mouse/tap option
+  if(cakeSvg){
+    try{
+      cakeSvg.style.cursor = 'pointer';
+      cakeSvg.addEventListener('click', (e)=>{ e.stopPropagation(); doBlow(); });
+    }catch(e){ /* ignore */ }
+  }
+
   // simple Happy Birthday melody using WebAudio
   function playHappyBirthday(tempo=1){
     try{
@@ -477,10 +486,30 @@ document.addEventListener('DOMContentLoaded', ()=>{
     source.connect(analyser);
     const data = new Uint8Array(analyser.fftSize);
 
-    // measure RMS and peak and trigger blow on a sharp burst
-    const RMS_THRESHOLD = 0.08; // lower for mobile
-    const PEAK_THRESHOLD = 0.28; // sudden peak threshold
+    // perform a short ambient calibration to adapt thresholds to the device
+    const CALIBRATE_MS = 900;
+    let baselineRms = 0, baselinePeak = 0;
+    try{
+      const samples = Math.max(4, Math.floor(CALIBRATE_MS / 120));
+      let accRms = 0, accPeak = 0;
+      for(let s=0;s<samples;s++){
+        analyser.getByteTimeDomainData(data);
+        let sum = 0, peak = 0;
+        for(let i=0;i<data.length;i++){ const v = (data[i]-128)/128; sum += v*v; peak = Math.max(peak, Math.abs(v)); }
+        const rms = Math.sqrt(sum / data.length);
+        accRms += rms; accPeak += peak;
+        // small delay between samples
+        await new Promise(r=>setTimeout(r, Math.floor(CALIBRATE_MS/samples)));
+      }
+      baselineRms = accRms / samples;
+      baselinePeak = accPeak / samples;
+    }catch(e){ baselineRms = 0.02; baselinePeak = 0.02 }
+
+    // set adaptive thresholds (guarded by minimum sensible values)
+    const RMS_THRESHOLD = Math.max(0.06, baselineRms * 4);
+    const PEAK_THRESHOLD = Math.max(0.16, baselinePeak * 3);
     let recentHigh = 0;
+
     meterInterval = setInterval(()=>{
       analyser.getByteTimeDomainData(data);
       let sum = 0; let peak = 0;
@@ -496,10 +525,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
       // update visual meter if present
       const fill = document.getElementById('audioMeterFill');
       if(fill){
-        // map peak/rms to 0..1 range for display
-        const displayVal = Math.min(1, Math.max(rms / 0.25, peak / 0.6));
+        // map peak/rms to 0..1 range for display using adaptive mapping
+        const displayVal = Math.min(1, Math.max((rms - baselineRms) / Math.max(0.12, RMS_THRESHOLD), peak / Math.max(0.4, PEAK_THRESHOLD)));
         fill.style.width = Math.round(displayVal * 100) + '%';
-        // flash when detecting strong blow
         if(displayVal > 0.6) fill.style.boxShadow = '0 4px 14px rgba(216,150,60,0.45)'; else fill.style.boxShadow = 'none';
       }
     }, 120);
