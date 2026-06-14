@@ -148,11 +148,14 @@ document.addEventListener('DOMContentLoaded', ()=>{
           if(flames && flames.length) flames.forEach(f=> f.classList.add('flicker'));
           // play happy birthday melody
           try{ playHappyBirthday(); }catch(e){ /* ignore */ }
-          // hide blow button until mic fallback needed
-          if(blowBtn) blowBtn.style.display = 'none';
-          // try to start mic listening; if denied, show the blow button as fallback
-          startMicListening().catch(()=>{
-            if(blowBtn){ blowBtn.style.display = 'inline-block'; document.querySelector('.blow-hint').textContent = 'Allow mic or press Blow'; }
+          // hide blow button until mic fallback needed (create if missing)
+          const b = ensureBlowButton(); if(b) b.style.display = 'none';
+          // try to start mic listening; if denied, show the blow button as fallback and guidance
+          startMicListening().catch((err)=>{
+            const btn = ensureBlowButton(); if(btn){ btn.style.display = 'inline-block'; }
+            const hint = document.querySelector('.blow-hint'); if(hint) hint.textContent = 'Allow mic or press Blow';
+            // if likely insecure context (iOS), show brief notice
+            showInsecureNotice();
           });
         }, 2200);
       }, 1000);
@@ -308,6 +311,55 @@ document.addEventListener('DOMContentLoaded', ()=>{
     blowBtn.addEventListener('click', doBlow);
   }
 
+  // ensure a Blow button exists as a fallback (create if missing)
+  function ensureBlowButton(){
+    let btn = document.getElementById('blowBtn');
+    if(btn) return btn;
+    if(!cakeWrap) return null;
+    btn = document.createElement('button');
+    btn.id = 'blowBtn';
+    btn.className = 'blow';
+    btn.textContent = 'Blow';
+    btn.style.display = 'inline-block';
+    btn.addEventListener('click', doBlow);
+    cakeWrap.appendChild(btn);
+    return btn;
+  }
+
+  // create a small audio level meter to help users see when blow is detected
+  function ensureMeter(){
+    let meter = document.getElementById('audioMeter');
+    if(meter) return meter;
+    const container = overlay.querySelector('.overlay-content') || overlay;
+    meter = document.createElement('div');
+    meter.id = 'audioMeter';
+    meter.style.width = '140px';
+    meter.style.height = '10px';
+    meter.style.borderRadius = '8px';
+    meter.style.background = 'rgba(255,255,255,0.06)';
+    meter.style.overflow = 'hidden';
+    meter.style.marginTop = '12px';
+    const fill = document.createElement('div'); fill.id = 'audioMeterFill';
+    fill.style.height = '100%'; fill.style.width = '0%'; fill.style.background = 'linear-gradient(90deg,#ffd77a,#d49a3b)';
+    meter.appendChild(fill);
+    container.appendChild(meter);
+    return meter;
+  }
+
+  // show a small notice when context may block mic (iOS requires HTTPS)
+  function showInsecureNotice(){
+    if(window.location.protocol === 'https:' || window.location.hostname === 'localhost') return;
+    let n = document.getElementById('insecureNotice');
+    if(n) return;
+    n = document.createElement('div');
+    n.id = 'insecureNotice';
+    n.textContent = 'Tip: For microphone on some phones (iOS), open this page on HTTPS or localhost.';
+    n.style.position = 'fixed'; n.style.left = '12px'; n.style.right = '12px'; n.style.bottom = '56px';
+    n.style.padding = '8px 12px'; n.style.background = 'rgba(0,0,0,0.5)'; n.style.color = '#f5e6b3'; n.style.borderRadius = '8px'; n.style.zIndex = 130;
+    document.body.appendChild(n);
+    setTimeout(()=>{ try{ n.remove() }catch(e){} }, 7000);
+  }
+
   // allow mobile users to tap the hint to enable microphone explicitly
   const micHint = document.getElementById('micHint');
   if(micHint){
@@ -317,10 +369,12 @@ document.addEventListener('DOMContentLoaded', ()=>{
       try{
         await startMicListening();
         micHint.textContent = 'Mic enabled — blow gently';
+        ensureMeter();
         try{ navigator.vibrate && navigator.vibrate(50); }catch(e){}
       }catch(err){
         micHint.textContent = 'Mic not available — press Blow';
-        if(blowBtn) blowBtn.style.display = 'inline-block';
+        ensureBlowButton();
+        showInsecureNotice();
       }
     });
   }
@@ -438,6 +492,16 @@ document.addEventListener('DOMContentLoaded', ()=>{
       if(isHigh) recentHigh++; else recentHigh = Math.max(0, recentHigh-1);
       // require a couple of consecutive high readings to avoid false positives
       if(recentHigh >= 2){ doBlow(); }
+
+      // update visual meter if present
+      const fill = document.getElementById('audioMeterFill');
+      if(fill){
+        // map peak/rms to 0..1 range for display
+        const displayVal = Math.min(1, Math.max(rms / 0.25, peak / 0.6));
+        fill.style.width = Math.round(displayVal * 100) + '%';
+        // flash when detecting strong blow
+        if(displayVal > 0.6) fill.style.boxShadow = '0 4px 14px rgba(216,150,60,0.45)'; else fill.style.boxShadow = 'none';
+      }
     }, 120);
   }
 
